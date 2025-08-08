@@ -1,18 +1,10 @@
 package bi.vovota.eac.di
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStoreFile
-import bi.vovota.eac.data.repo.AuthRepo
-import bi.vovota.eac.data.repo.AuthRepositoryImpl
-import bi.vovota.eac.data.TokenManager
-import bi.vovota.eac.data.remote.ApiService
-import bi.vovota.eac.data.repo.ProductRepo
-import bi.vovota.eac.data.repo.ProductRepoImpl
-import bi.vovota.eac.data.repo.ProfileRepo
-import bi.vovota.eac.data.repo.ProfileRepoImpl
+import bi.vovota.eac.data.repository.AuthRepository
+import bi.vovota.eac.data.model.TokenManager
+import bi.vovota.eac.data.repository.OrderRepository
+import bi.vovota.eac.data.repository.UserRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -21,53 +13,57 @@ import dagger.hilt.components.SingletonComponent
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import javax.inject.Singleton
+
 
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    @Provides
-    @Singleton
-    fun provideHttpClient(): HttpClient = HttpClient(CIO) {
-        install(ContentNegotiation) {
-            json(Json {
-                prettyPrint = true
-                ignoreUnknownKeys = true
-                isLenient = true
-            })
-        }
+  @Provides
+  @Singleton
+  fun provideHttpClient(): HttpClient {
+    val client = HttpClient(CIO) {
+      install(ContentNegotiation) {
+        json(Json {
+          ignoreUnknownKeys = true
+          isLenient = true
+          prettyPrint = true
+        })
+      }
     }
+    println("Provided: ${client.hashCode()}")
+    return client
+  }
 
-    @Provides
-    @Singleton
-    fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
-        return PreferenceDataStoreFactory.create(
-            produceFile = { context.preferencesDataStoreFile("auth_prefs")}
-        )
-    }
+  @Provides
+  @Singleton
+  fun provideAuthRepository(client: HttpClient): AuthRepository {
+    return AuthRepository(client)
+  }
 
-    @Provides
-    @Singleton
-    fun provideAuthApi(client: HttpClient): ApiService = ApiService(client)
+  @Provides
+  @Singleton
+  fun provideOrderRepository(client: HttpClient): OrderRepository =
+    OrderRepository(client)
 
-    @Provides
-    @Singleton
-    fun provideAuthRepository(api: ApiService): AuthRepo = AuthRepositoryImpl(api)
+  @Provides
+  @Singleton
+  fun provideUserRepository(
+    client: HttpClient,
+    @ApplicationContext context: Context,
+    tokenManager: TokenManager
+  ): UserRepository {
+    return UserRepository(client, context, tokenManager)
+  }
 
-    @Provides
-    @Singleton
-    fun provideTokenManager(dataStore: DataStore<Preferences>): TokenManager {
-        return TokenManager(dataStore)
-    }
+  @Provides
+  @Singleton
+  fun provideTokenManager(@ApplicationContext context: Context): TokenManager {
+    TokenManager.init(context)
+    return TokenManager
+  }
 
-    @Provides
-    @Singleton
-    fun provideProfile(api: ApiService): ProfileRepo = ProfileRepoImpl(api)
-
-    @Provides
-    @Singleton
-    fun provideProductRepo(api: ApiService): ProductRepo = ProductRepoImpl(api)
 }

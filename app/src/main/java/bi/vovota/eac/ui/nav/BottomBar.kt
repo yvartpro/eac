@@ -13,7 +13,7 @@ import bi.vovota.eac.ui.theme.GreenMIB
 import bi.vovota.eac.viewmodel.CartViewModel
 
 @Composable
-fun BottomBar(navController: NavController, cartItemCount: Int, cartViewModel: CartViewModel) {
+fun BottomBar(navController: NavController, cartItemCount: Int) {
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = navBackStackEntry?.destination?.route
 

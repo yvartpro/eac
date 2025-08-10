@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 
 
 val GreenMIB = Color(0xFF0F9012)
+val DarkGreen = Color(0xFF0E5C43)
 // --- Light Theme Colors ---
 val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)

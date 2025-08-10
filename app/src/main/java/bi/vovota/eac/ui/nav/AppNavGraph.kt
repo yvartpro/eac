@@ -1,5 +1,6 @@
 package bi.vovota.eac.ui.nav
 
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
@@ -12,6 +13,8 @@ import bi.vovota.eac.ui.screen.CartScreen
 import bi.vovota.eac.ui.screen.CompanyDetailsScreen
 import bi.vovota.eac.ui.screen.CompanyScreen
 import bi.vovota.eac.ui.screen.HomeScreen
+import bi.vovota.eac.ui.screen.MerchantDashboardBody
+import bi.vovota.eac.ui.screen.ProductDetailBody
 import bi.vovota.eac.ui.screen.ProductScreen
 import bi.vovota.eac.ui.screen.ProfileScreen
 import bi.vovota.eac.ui.screen.SearchScreen
@@ -77,6 +80,26 @@ fun AppNavGraph(
           navController = navController, userViewModel = userViewModel
         )
       }
+    }
+    composable(NavDestinations.DETAILS) { backStackEntry->
+      val productId = backStackEntry.arguments?.getString("productId")?.toIntOrNull()
+      val product = productViewModel.products.find { it.id == productId }
+      product?.let {
+        ProductDetailBody(
+          product,
+          cartViewModel,
+          productViewModel,
+          navController,
+          userViewModel,
+        )
+      }
+    }
+    composable(NavDestinations.DASHBOARD) { backStackEntry->
+        MerchantDashboardBody(
+          products = productViewModel.products,
+          onEditProduct = { },
+          onOrderClick = { }
+        )
     }
     composable(NavDestinations.PROFILE) {
       ProfileScreen(

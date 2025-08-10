@@ -74,7 +74,7 @@ fun ProductItem(
       .background(Color.Transparent)
       .padding(horizontal = Spacings.medium())
       .width(180.dp)
-      .clickable { navController.navigate("product/${product.id}")}
+      .clickable { navController.navigate("details/${product.id}")}
   ) {
     AsyncImage(
       model = product.image,

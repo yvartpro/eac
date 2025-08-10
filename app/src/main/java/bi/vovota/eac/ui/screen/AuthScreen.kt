@@ -64,6 +64,7 @@ import androidx.navigation.NavController
 import bi.vovota.eac.R
 import bi.vovota.eac.ui.component.PhoneInputField
 import bi.vovota.eac.ui.component.ProfileTextField
+import bi.vovota.eac.ui.component.RadioCheckBox
 import bi.vovota.eac.ui.component.SmallText
 import bi.vovota.eac.ui.nav.NavDestinations
 import bi.vovota.eac.viewmodel.AuthViewModel
@@ -143,6 +144,7 @@ userViewModel: UserViewModel
       verticalArrangement = Arrangement.spacedBy(16.dp)
     ){
       if(!isLogin) {
+        RadioCheckBox()
         ProfileTextField(
           value = fullName,
           onValueChange = { fullName = it },

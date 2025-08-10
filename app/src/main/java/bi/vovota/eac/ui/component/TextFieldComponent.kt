@@ -168,3 +168,9 @@ class PhonePrefixTransform(private val prefix: String): VisualTransformation {
     return TransformedText(AnnotatedString(newText), offSetMapping)
   }
 }
+
+@Composable
+fun RadioCheckBox(){
+  val radioSelected by remember { mutableStateOf(false)}
+  RadioButton(selected = radioSelected, onClick = { } )
+}

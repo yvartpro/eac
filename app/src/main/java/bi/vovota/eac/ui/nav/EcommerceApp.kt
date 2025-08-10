@@ -75,7 +75,7 @@ fun EcommerceApp(
       }
     },
     bottomBar = {
-      BottomBar(navController = navController, cartItemCount = cartCount, cartViewModel)
+      BottomBar(navController = navController, cartItemCount = cartCount)
     }
   ) { innerPadding ->
     AppNavGraph(

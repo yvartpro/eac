@@ -1,5 +1,6 @@
 package bi.vovota.eac.ui.screen
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -7,22 +8,33 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import bi.vovota.eac.data.model.Order
 import bi.vovota.eac.data.model.Product
 import bi.vovota.eac.viewmodel.CartViewModel
+import bi.vovota.eac.viewmodel.OrderViewModel
 import bi.vovota.eac.viewmodel.ProductViewModel
 import bi.vovota.eac.viewmodel.UserViewModel
 import coil.compose.AsyncImage
@@ -67,137 +79,6 @@ fun ProductCard(product: Product, onClick: () -> Unit) {
     }
 }
 
-@Composable
-fun OrderCard(order: Order, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(Modifier.padding(12.dp)) {
-            Text("Order #${order.id}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium)
-            Text("Status: ${order.isPayed}", style = MaterialTheme.typography.bodySmall)
-        }
-    }
-}
-
-// ---------------- Sample Models ----------------
-data class ProductUI(val name: String, val price: String, val description: String, val imageRes: Int)
-data class OrderUI(val id: String, val status: String)
-
-
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun MerchantDashboardBody(
-    merchantName: String = "Namugara Stacy",
-    products: List<Product>,
-//    orders: List<Order>,
-    onEditProduct: (Product) -> Unit,
-    onOrderClick: (Order) -> Unit
-) {
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp)
-    ) {
-        item {
-            Text(
-                "Welcome, $merchantName",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
-
-        // Products Section
-        item { SectionHeader("Your Products", Icons.Default.Face) }
-
-        item {
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                products.forEach { product ->
-                    MerchantProductCard(
-                        product = product,
-                        onEditClick = { onEditProduct(product) }
-                    )
-                }
-            }
-        }
-
-        // Orders Section
-        item { SectionHeader("Recent Orders", Icons.Default.FavoriteBorder) }
-
-        item {
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                orders.forEach { order ->
-                    OrderMiniCard(
-                        order = order,
-                        onClick = { onOrderClick(order) }
-                    )
-                }
-            }
-
-        }
-    }
-}
-
-@Composable
-fun CustomerProfileBody(
-    customerName: String,
-    phone: String,
-    orders: List<Order>,
-    onOrderClick: (Order) -> Unit
-) {
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        item {
-            // Profile Header
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(72.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.secondary)
-                ) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSecondary,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                Spacer(Modifier.width(16.dp))
-                Column {
-                    Text(customerName, style = MaterialTheme.typography.titleLarge)
-                    Text(phone, style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-        }
-        // Orders
-        item {
-            SectionHeader("My Orders", Icons.Default.MailOutline)
-        }
-        items(orders.size) { index ->
-            OrderCard(order = orders[index], onClick = { onOrderClick(orders[index]) })
-        }
-    }
-}
 
 @Composable
 fun ProductDetailBody(
@@ -254,82 +135,6 @@ fun ProductDetailBody(
     }
 }
 
-    @Composable
-    fun MerchantProductCard(
-        product: Product,
-        onEditClick: () -> Unit
-    ) {
-        Card(
-            modifier = Modifier
-                .width(160.dp) // auto width in FlowRow
-                .clickable { onEditClick() },
-            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            Column {
-                Box {
-                    AsyncImage(
-                        model = product.image,
-                        contentDescription = product.name,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(120.dp)
-                            .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                    IconButton(
-                        onClick = onEditClick,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(4.dp)
-                            .size(24.dp)
-                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape)
-                    ) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = "Edit Product",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-                Column(Modifier.padding(8.dp)) {
-                    Text(
-                        product.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1
-                    )
-                    Text(
-                        product.bdiPrice,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        }
-    }
-
-@Composable
-fun OrderMiniCard(order: Order, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .width(160.dp)
-            .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(
-            Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text("Order #${order.id}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-            StatusChip(status = order.isDelivered.toString())
-        }
-    }
-}
-
-
 @Composable
 fun StatusChip(status: String) {
     Surface(
@@ -350,11 +155,356 @@ fun StatusChip(status: String) {
         )
     }
 }
-        val orders = listOf(
-    Order(1, "Order description",true, false, 1,"2025-08-4"),
-    Order(1, "Order description",true, false, 1,"2025-08-4"),
-    Order(1, "Order description",true, false, 1,"2025-08-4"),
-    Order(1, "Order description",true, false, 1,"2025-08-6"),
-    Order(1, "Order description",true, false, 1,"2025-08-7"),
-    Order(1, "Order description",true, false, 1,"2025-08-8"),
-)
+
+@Composable
+fun MerchantProductCompactCard(
+    product: Product,
+    onEditClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onEditClick() },
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            Modifier
+                .padding(8.dp)
+                .height(IntrinsicSize.Min),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = product.image,
+                contentDescription = product.name,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(6.dp)),
+                contentScale = ContentScale.Crop
+            )
+
+            Spacer(Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .align(Alignment.CenterVertically)
+            ) {
+                Text(
+                    product.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1
+                )
+                Text(
+                    product.bdiPrice,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            IconButton(onClick = onEditClick) {
+                Icon(Icons.Default.Edit, contentDescription = "Edit")
+            }
+        }
+    }
+}
+
+@Composable
+fun EditProduct(
+    product: Product,
+    productViewModel: ProductViewModel,
+    onImageEditClick: () -> Unit,
+    onFieldChange: (field: String, value: String) -> Unit,
+    onRelatedProductEdit: (Product) -> Unit
+) {
+    val products = productViewModel.products
+    val relatedProducts = products.filter { it.category == product.category && it.id != product.id }
+    // Use vertical scroll for the whole content
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+    ) {
+        // Image with Edit button overlay
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .clip(RoundedCornerShape(16.dp))
+        ) {
+            AsyncImage(
+                model = product.image,
+                contentDescription = product.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            IconButton(
+                onClick = onImageEditClick,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(12.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                        shape = CircleShape
+                    )
+                    .size(36.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Edit Product Image",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        // Editable fields
+        OutlinedTextField(
+            value = product.name,
+            onValueChange = { onFieldChange("name", it) },
+            label = { Text("Product Name") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        OutlinedTextField(
+            value = product.bdiPrice,
+            onValueChange = { onFieldChange("price", it) },
+            label = { Text("Price") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        OutlinedTextField(
+            value = product.name ?: "",
+            onValueChange = { onFieldChange("description", it) },
+            label = { Text("Description") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp),
+            maxLines = 5
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        // Related Products Header
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "Related Products",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                modifier = Modifier.weight(1f)
+            )
+            // Optional: maybe a see all button or icon can go here
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // Related products horizontally scrollable row
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 4.dp)
+        ) {
+            items(relatedProducts) { relatedProduct ->
+                Card(
+                    modifier = Modifier
+                        .width(140.dp)
+                        .clickable { onRelatedProductEdit(relatedProduct) },
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(4.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        AsyncImage(
+                            model = relatedProduct.image,
+                            contentDescription = relatedProduct.name,
+                            modifier = Modifier
+                                .size(96.dp)
+                                .clip(RoundedCornerShape(10.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            relatedProduct.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1
+                        )
+                        Text(
+                            relatedProduct.bdiPrice,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        IconButton(
+                            onClick = { onRelatedProductEdit(relatedProduct) },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit Related Product",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CommandCompactCard(
+    order: Order,
+    isExpanded: Boolean,
+    clientName: String,
+    amount: String,
+    itemCount: Int,
+    onMarkPaid: () -> Unit,
+    onReject: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            Modifier
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(clientName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                Text("$amount • $itemCount items", style = MaterialTheme.typography.labelSmall)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                IconButton(onClick = onMarkPaid) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = "Mark Paid", tint = MaterialTheme.colorScheme.secondary)
+                }
+                IconButton(onClick = onReject) {
+                    Icon(Icons.Default.Close, contentDescription = "Reject", tint = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
+        AnimatedVisibility(visible = isExpanded) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp)
+            ) {
+                Text(
+                    text = order.date ?: "No description available",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun MerchantDashboardBody(
+    merchantName: String = "Namugara Stacy",
+    products: List<Product>,
+    onEditProduct: (Product) -> Unit,
+    onOrderClick: (Order) -> Unit,
+    productViewModel: ProductViewModel,
+    userViewModel: UserViewModel,
+    orderViewModel: OrderViewModel
+) {
+    val user = userViewModel.user
+
+    val orders = orderViewModel.orders
+    val ownOrders = orders.filter { it.buyer == user?.id }.sortedByDescending { it.date }
+
+    LaunchedEffect(Unit) {
+        userViewModel.loadUserProfile()
+        orderViewModel.loadOrders()
+    }
+    var expandedOrderId by remember { mutableStateOf<Int?>(null) }
+
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+    ) {
+        // Header
+        item {
+            Text(
+                "Welcome, $merchantName",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
+
+        // Products Section
+        item { SectionHeader("Your Products", Icons.Default.Face) }
+        item {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                products.forEach { product ->
+                    MerchantProductCompactCard(product = product, onEditClick = { onEditProduct(product) })
+                }
+            }
+        }
+
+        // Orders Section
+        item { SectionHeader("Recent Orders", Icons.Default.FavoriteBorder) }
+        item {
+            OrdersList(orders = ownOrders, productViewModel = productViewModel, onMarkPaid = { }, onReject = { })
+        }
+    }
+}
+
+@Composable
+fun OrdersList(
+    orders: List<Order>,
+    productViewModel: ProductViewModel,
+    onMarkPaid: (Order) -> Unit,
+    onReject: (Order) -> Unit
+) {
+    var expandedOrderId by remember { mutableStateOf<Int?>(null) }
+    // You can manage paid state here if needed (or in your ViewModel)
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        for (order in orders) {
+            val isExpanded = expandedOrderId == order.id
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expandedOrderId = if (isExpanded) null else order.id }
+                    .padding(vertical = 4.dp)
+            ) {
+                CommandCompactCard(
+                    order = order,
+                    isExpanded = isExpanded,
+                    clientName = "Client ${order.buyer}",  // adjust as needed
+                    amount = "2000 FBu",            // make sure order.amount exists
+                    itemCount = 12,          // assuming itemCount in Order model
+                    onMarkPaid = { onMarkPaid(order) },
+                    onReject = { onReject(order) }
+                )
+            }
+        }
+    }
+}

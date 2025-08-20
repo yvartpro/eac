@@ -48,22 +48,21 @@ data class CartItem(
 data class UserRaw(
   val id: Int,
   val user: NestedUser,
-  val address: String? = null,
-  val photo: String? = null
 )
+
 @Serializable
 data class NestedUser(
   @SerialName("full_name") val fullName: String,
   @SerialName("phone_number") val phone: String,
+  val types: String
 )
-fun UserRaw.toUser(): User = User(id, user.fullName, user.phone, address, photo)
+fun UserRaw.toUser(): User = User(id, user.fullName, user.phone, types = user.types)
 @Serializable
 data class User(
   val id: Int,
-  val fullName: String,
+  @SerialName("full_name") val fullName: String,
   val phone: String,
-  val address: String? = null,
-  val photo: String? = null,
+  val types: String
 ) {
   val code: String = phone.take(3)
 }
@@ -71,13 +70,14 @@ data class User(
 @Serializable
 data class UserRegister(
   @SerialName("full_name") val fullName: String,
-  @SerialName("phone_number") val phone: String,
+  val phone: String,
+  val types: String,
   val password: String
 )
 
 @Serializable
 data class UserLogin(
-  @SerialName("phone_number") val phone: String,
+  val phone: String,
   val password: String
 )
 
@@ -89,7 +89,6 @@ data class TokenResponse(
 
 @Serializable
 data class NewOrder(
-  val customer: Int,
   val description: String
 )
 
@@ -98,7 +97,6 @@ data class Category(@StringRes val title: Int, val name: String? = null, var isA
 @Serializable
 data class UserUpdate(
   val user: UserFields,
-  val address: String? = null,
 )
 
 @Serializable
@@ -111,9 +109,9 @@ data class UserFields(
 @Serializable
 data class Order(
   val id: Int,
-  val description: String,
-  @SerialName("is_delivered") val isDelivered: Boolean,
-  @SerialName("is_payed") val isPayed: Boolean,
-  val customer: Int,
-  val date: String
+  @SerialName("created_at") val date: String,
+  val product: Int,
+  val buyer: Int,
 )
+
+

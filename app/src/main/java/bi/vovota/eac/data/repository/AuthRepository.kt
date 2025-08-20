@@ -1,5 +1,6 @@
 package bi.vovota.eac.data.repository
 
+import android.util.Log
 import bi.vovota.eac.data.model.TokenManager
 import bi.vovota.eac.data.model.TokenResponse
 import bi.vovota.eac.data.model.UserLogin
@@ -9,23 +10,24 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.*
+import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
 
 class AuthRepository @Inject constructor(
   private val client: HttpClient
 ) {
-  suspend fun registerUser(fullName: String, phoneNumber: String, password: String): Boolean {
+  suspend fun registerUser(userRegister: UserRegister): Boolean {
     return try {
-      val resp = client.post("https://mib.vovota.bi/api/register/") {
-        contentType(ContentType.Application.Json)
-        setBody(UserRegister(fullName, phoneNumber,  password))
+      val resp = withTimeout(10000) {
+        client.post("https://trade.vovota.bi/api/user/") {
+          contentType(ContentType.Application.Json)
+          setBody(userRegister)
+        }
       }
       if(resp.status == HttpStatusCode.Created || resp.status == HttpStatusCode.OK){
         true
       }else{
         val err = resp.bodyAsText()
-        println("$fullName, $phoneNumber")
-        println("Error register: ${resp.status} -$err ")
         false
       }
     } catch (e: Exception) {
@@ -34,11 +36,11 @@ class AuthRepository @Inject constructor(
     }
   }
 
-  suspend fun loginUser(phoneNumber: String, password: String): TokenResponse? {
+  suspend fun loginUser(phone: String, password: String): TokenResponse? {
     return try {
-      val resp = client.post("https://mib.vovota.bi/token/") {
+      val resp = client.post("https://trade.vovota.bi/api/token/") {
         contentType(ContentType.Application.Json)
-        setBody(UserLogin(phoneNumber, password))
+        setBody(UserLogin(phone, password))
       }
       resp.body()
     } catch (e: Exception) {
@@ -54,7 +56,7 @@ class AuthRepository @Inject constructor(
       return false
     }
     return try {
-        val response = client.post("https://mib.vovota.bi/refresh") {
+        val response = client.post("https://trade.vovota.bi/refresh") {
           contentType(ContentType.Application.Json)
           setBody(mapOf("refresh" to refresh))
         }

@@ -38,7 +38,7 @@ object TokenManager {
     }
   }
   suspend fun getAccessToken(): String? = dataStore.data.map {
-    it[ACCESS_TOKEN_KEY]  }.firstOrNull().also { println("Access token got: $it") }
+    it[ACCESS_TOKEN_KEY]  }.firstOrNull()
 
   suspend fun getRefreshToken(): String? = dataStore.data.map { it[REFRESH_TOKEN_KEY] }.firstOrNull()
   suspend fun clearTokens() {

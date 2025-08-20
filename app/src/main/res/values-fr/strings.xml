@@ -54,8 +54,8 @@
     <string name="f_addr">Adresse</string>
     <string name="f_enter_pwd">Entrez votre mot de passe</string>
     <!-- auth screen -->
-    <string name="auth_login">Connexion</string>
-    <string name="auth_signin">Inscription</string>
+    <string name="auth_login">Connectez-vous</string>
+    <string name="auth_signin">Creer un compte</string>
     <string name="auth_wait">Veuillez patienter...</string>
     <string name="auth_not_yet_user">Pas encore inscrit ?</string>
     <string name="auth_create_one">Inscrivez-vous maintenant</string>

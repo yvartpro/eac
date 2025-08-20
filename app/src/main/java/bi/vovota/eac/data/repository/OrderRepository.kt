@@ -1,5 +1,6 @@
 package bi.vovota.eac.data.repository
 
+import android.util.Log
 import bi.vovota.eac.data.model.CartItem
 import bi.vovota.eac.data.model.NewOrder
 import bi.vovota.eac.data.model.Order
@@ -20,13 +21,13 @@ class OrderRepository @Inject constructor(
   init {
     println("Received: ${client.hashCode()}")
   }
-  suspend fun placeOrder(order: NewOrder): Boolean {
+  private suspend fun placeOrder(order: NewOrder): Boolean {
     val access = TokenManager.getAccessToken()
     println("Passed access_token: $access")
     val token = access ?: println("No token found") //throw UnAuthorizedException("No access token found")
-    println("Sending...: ${order}")
+    println("Sending...: $order")
     return try {
-      val response = client.post("https://mib.vovota.bi/api/order/") {
+      val response = client.post("https://trade.vovota.bi/api/order/") {
         contentType(ContentType.Application.Json)
         header(HttpHeaders.Authorization, "Bearer $token")
         setBody(order)
@@ -41,15 +42,15 @@ class OrderRepository @Inject constructor(
       println("Order placed successfully or failed")
     }
   }
-  suspend fun placeOrderMessage(user: User, cartItems: List<CartItem>): Boolean {
+  suspend fun placeOrderMessage(cartItems: List<CartItem>): Boolean {
 
-    val description = buildOrderDescription(user, cartItems)
-    return placeOrder(NewOrder(user.id, description))
+    val description = buildOrderDescription(cartItems)
+    return placeOrder(NewOrder(description))
   }
 
-  private fun buildOrderDescription(user: User, items: List<CartItem>): String {
+  private fun buildOrderDescription(items: List<CartItem>): String {
     fun getCurrency(): String {
-      return when (user.code) {
+      return when ("254") {
         "254" -> "KSH"
         "255" -> "TSH"
         "250" -> "RWF"
@@ -59,8 +60,8 @@ class OrderRepository @Inject constructor(
       }
     }
 
-    fun getPrice(user: User, product: Product): String {
-      return when (user.code) {
+    fun getPrice(product: Product): String {
+      return when ("254") {
         "254" -> product.kePrice
         "255" -> product.tzPrice
         "250" -> product.rwPrice
@@ -69,12 +70,12 @@ class OrderRepository @Inject constructor(
         else -> product.bdiPrice
       }
     }
-    val total = items.sumOf { getPrice(user, it.product).toDouble() * it.quantity.value }
+    val total = items.sumOf { getPrice(it.product).toDouble() * it.quantity.value }
     return buildString {
       append("Command details: \n")
       items.forEach {
-        val sub = getPrice(user, it.product).toDouble() * it.quantity.value
-        append("- ${it.quantity.value}x ${it.product.name} (${getPrice(user, it.product)} ${getCurrency()}): ${sub.toInt()} ${getCurrency()}\n")
+        val sub = getPrice(it.product).toDouble() * it.quantity.value
+        append("- ${it.quantity.value}x ${it.product.name} (${getPrice(it.product)} ${getCurrency()}): ${sub.toInt()} ${getCurrency()}\n")
       }
       append("\nTotal: ${total.toInt()} ${getCurrency()}")
     }
@@ -85,19 +86,19 @@ class OrderRepository @Inject constructor(
     val token = access ?: println("No token found")
     return try {
       println("🔎 Calling order API...")
-      val response: HttpResponse = client.get("https://mib.vovota.bi/api/order/") {
+      val response: HttpResponse = client.get("https://trade.vovota.bi/api/order/") {
         contentType(ContentType.Application.Json)
         header(HttpHeaders.Authorization, "Bearer $token")
       }
-      println("✅ Response: ${response.status}")
+      Log.d("resp order repo", "✅ Response: ${response.toString()}")
       val rawJson = response.bodyAsText()
       println("📦 Body: $rawJson")
 
       val orders = Json.decodeFromString<List<Order>>(rawJson)
-      println("✅ Products loaded: ${orders.size}")
+      Log.d("✅ Products loaded","✅ Products loaded: ${orders.size}")
       orders
     } catch (e: Exception) {
-      println("❌ Exception: ${e.message}")
+      Log.d("x exception order","❌ Exception: ${e.message}")
       emptyList()
     }
   }

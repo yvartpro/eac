@@ -104,8 +104,7 @@ class CartViewModel @Inject constructor(
     viewModelScope.launch {
       try {
         val user = userRepository.getProfile()
-        val total = calculateGrandTotal(user)
-        val success = orderRepository.placeOrderMessage(user, cartItems)
+        val success = orderRepository.placeOrderMessage(cartItems)
         if (success) {
           cartItems.clear()
           grandTotal = 0.0

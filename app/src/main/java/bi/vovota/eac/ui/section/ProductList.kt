@@ -1,8 +1,10 @@
 package bi.vovota.eac.ui.section
 
 import ProductCardShimmer
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -24,6 +26,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +45,7 @@ import bi.vovota.eac.ui.theme.FontSizes
 import bi.vovota.eac.ui.theme.Spacings
 import bi.vovota.eac.viewmodel.CartViewModel
 import bi.vovota.eac.viewmodel.ProductViewModel
+import bi.vovota.eac.viewmodel.UserViewModel
 
 @Composable
 fun ProductList(
@@ -74,14 +78,14 @@ fun ProductList(
           if (product == null) {
             ProductCardShimmer(modifier = Modifier.weight(1f))
           }else {
-              ProductCard(
-                cartViewModel =  cartViewModel,
-                product = product,
-                modifier = Modifier.weight(1f),
-                navController = navController,
-                user = user,
-                productViewModel = productViewModel
-              )
+            ProductCard(
+              cartViewModel =  cartViewModel,
+              product = product,
+              modifier = Modifier.weight(1f),
+              navController = navController,
+              user = user,
+              productViewModel = productViewModel
+            )
           }
         }
         if (rowItems.size == 1) {
@@ -104,80 +108,181 @@ fun ProductCard(
   val price = productViewModel.getPrice(product, user)
   val currency = productViewModel.getCurrency(user)
 
+  // Stable "random" choice: based on product.id
+  val styleType = remember(product.id) { (product.id % 3) } // 0,1,2
+
+  when (styleType) {
+    0 -> ProductCardFull(cartViewModel, product, price, currency, modifier, navController)
+    1 -> ProductCardCompact(product, price, currency, modifier, navController)
+    2 -> ProductCardImageFocus(cartViewModel, product, price, currency, modifier, navController)
+  }
+}
+
+@Composable
+fun ProductCardFull(
+  cartViewModel: CartViewModel,
+  product: Product,
+  price: String,
+  currency: String,
+  modifier: Modifier,
+  navController: NavController
+) {
   Card(
     modifier = modifier
       .width(IntrinsicSize.Max)
       .clickable { navController.navigate("product/${product.id}") },
-    shape = RoundedCornerShape(4.dp),
+    shape = RoundedCornerShape(12.dp),
     colors = CardDefaults.cardColors(
       containerColor = MaterialTheme.colorScheme.surface
     ),
-    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
   ) {
     Column(
-      modifier = Modifier.padding(Spacings.medium())
+      modifier = Modifier.padding(12.dp)
     ) {
       AsyncImage(
         model = product.image,
         contentDescription = product.name,
-        contentScale = ContentScale.Fit,
+        contentScale = ContentScale.Crop,
         modifier = Modifier
           .fillMaxWidth()
           .aspectRatio(1f)
-          .clip(RoundedCornerShape(4.dp))
+          .clip(RoundedCornerShape(12.dp))
       )
-
       Spacer(modifier = Modifier.height(8.dp))
 
       Text(
         text = product.name,
-        fontSize = FontSizes.caption(),
-        style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.SemiBold,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.heightIn(min = 16.sp.value.dp)
+        style = MaterialTheme.typography.titleMedium,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+      )
+      Text(
+        text = product.company.name,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
       )
 
-      // Company Name - subtle
-      if (product.company.name.isNotBlank()) {
-        Spacer(modifier = Modifier.height(0.dp))
-        Text(
-          text = product.company.name,
-          fontSize = FontSizes.caption(),
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis
-        )
-      }
-
-      Spacer(modifier = Modifier.height(0.dp))
-
+      Spacer(modifier = Modifier.height(4.dp))
       Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
       ) {
         Text(
-          text = "$price $currency ${ if (product.isBox) " / box" else ""}",
-          fontSize = FontSizes.caption(),
+          text = "$price $currency",
           style = MaterialTheme.typography.titleMedium,
-          fontWeight = FontWeight.ExtraBold,
+          fontWeight = FontWeight.Bold,
           color = MaterialTheme.colorScheme.primary
         )
         FilledIconButton(
           onClick = { cartViewModel.addToCart(product) },
           shape = CircleShape,
           modifier = Modifier.size(36.dp),
-          colors = IconButtonDefaults.filledIconButtonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-          )
         ) {
           Icon(
             painter = painterResource(id = R.drawable.add_to_cart),
-            contentDescription = "Add ${product.name} to cart",
+            contentDescription = "Add to cart",
             modifier = Modifier.size(20.dp)
+          )
+        }
+      }
+    }
+  }
+}
+
+@Composable
+fun ProductCardCompact(
+  product: Product,
+  price: String,
+  currency: String,
+  modifier: Modifier,
+  navController: NavController
+) {
+  Card(
+    modifier = modifier
+      .clickable { navController.navigate("product/${product.id}") },
+    shape = RoundedCornerShape(8.dp),
+    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+  ) {
+    Column(
+      modifier = Modifier.padding(8.dp),
+      horizontalAlignment = Alignment.Start
+    ) {
+      AsyncImage(
+        model = product.image,
+        contentDescription = product.name,
+        contentScale = ContentScale.Crop,
+        modifier = Modifier
+          .fillMaxWidth()
+          .aspectRatio(1f)
+      )
+      Spacer(modifier = Modifier.height(4.dp))
+      Text(
+        text = product.name,
+        fontWeight = FontWeight.Medium,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+      )
+      Text(
+        text = "$price $currency",
+        style = MaterialTheme.typography.bodyMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary
+      )
+    }
+  }
+}
+
+@Composable
+fun ProductCardImageFocus(
+  cartViewModel: CartViewModel,
+  product: Product,
+  price: String,
+  currency: String,
+  modifier: Modifier,
+  navController: NavController
+) {
+  Card(
+    modifier = modifier
+      .clickable { navController.navigate("product/${product.id}") },
+    shape = RoundedCornerShape(16.dp),
+    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+  ) {
+    Box {
+      AsyncImage(
+        model = product.image,
+        contentDescription = product.name,
+        contentScale = ContentScale.Crop,
+        modifier = Modifier
+          .fillMaxWidth()
+          .aspectRatio(1f)
+      )
+      // Overlay price bar
+      Row(
+        modifier = Modifier
+          .align(Alignment.BottomStart)
+          .fillMaxWidth()
+          .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f))
+          .padding(8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+      ) {
+        Column {
+          Text(product.name, fontWeight = FontWeight.SemiBold)
+          Text("$price $currency", color = MaterialTheme.colorScheme.primary)
+        }
+        FilledIconButton(
+          onClick = { cartViewModel.addToCart(product) },
+          shape = CircleShape,
+          modifier = Modifier.size(32.dp)
+        ) {
+          Icon(
+            painter = painterResource(id = R.drawable.add_to_cart),
+            contentDescription = "Add to cart",
+            modifier = Modifier.size(18.dp)
           )
         }
       }

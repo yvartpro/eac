@@ -40,6 +40,7 @@ import bi.vovota.eac.ui.theme.FontSizes
 import bi.vovota.eac.viewmodel.OrderViewModel
 import bi.vovota.eac.viewmodel.UserViewModel
 import bi.vovota.eac.R
+import androidx.core.net.toUri
 
 @Composable
 fun ProfileScreen(
@@ -55,19 +56,15 @@ fun ProfileScreen(
 
   var fullNameState by remember(user?.fullName) { mutableStateOf(user?.fullName ?: "") }
   var phoneState by remember(user?.phone) { mutableStateOf(user?.phone ?: "") }
-  var addressState by remember(user?.address) { mutableStateOf(user?.address ?: "") }
   var passwordState by remember { mutableStateOf("") }
   var passwordVisible by remember { mutableStateOf(false) }
 
   LaunchedEffect(Unit) {
     userViewModel.loadUserProfile()
     orderViewModel.loadOrders()
-    userViewModel.navigateToLogin.collect {
-      navController.navigate(NavDestinations.AUTH)
-    }
   }
     val orders = orderViewModel.orders
-    val ownOrders = orders.filter { it.customer == user?.id }.sortedByDescending { it.date }
+    val ownOrders = orders.filter { it.buyer == user?.id }.sortedByDescending { it.date }
   if (isLoading) {
     ProfileShimmer()
   }  else if (user != null) {
@@ -100,7 +97,7 @@ Text(
         icon = Icons.Default.Person,
         onSubmit = {
           fullNameState = it
-          userViewModel.updateUser(UserUpdate(UserFields(it, null, null), null), user.id)
+          userViewModel.updateUser(UserUpdate(UserFields(it, null, null)), user.id)
         }
       )
 
@@ -113,22 +110,10 @@ Text(
                 icon = Icons.Default.Phone,
                 onSubmit = {
                     phoneState = it
-                    userViewModel.updateUser(UserUpdate(UserFields(null, it, null), null), user.id)
+                    userViewModel.updateUser(UserUpdate(UserFields(null, it, null)), user.id)
                 }
             )
         }
-
-      EditableProfileInfoItem(
-        label = stringResource(R.string.f_addr),
-        isEditMode = isEditMode,
-        isUpdating = isUpdating,
-        value = addressState,
-        icon = Icons.Default.LocationOn,
-        onSubmit = {
-          addressState = it
-          userViewModel.updateUser(UserUpdate(UserFields(null, null, null), address = it), user.id)
-        }
-      )
 
         if (isEditMode) {
             EditableProfileInfoItem(
@@ -140,7 +125,7 @@ Text(
                 placeholder = "",
                 onSubmit = {
                     passwordState = it
-                    userViewModel.updateUser(UserUpdate(UserFields(null, null, password = it), null), user.id)
+                    userViewModel.updateUser(UserUpdate(UserFields(null, null, password = it)), user.id)
                     passwordState = ""
                 },
                 keyboardType = KeyboardType.Password,
@@ -171,7 +156,7 @@ Text(
         fontSize = FontSizes.caption(),
         color = Color(0xFF37a8ee),
         modifier = Modifier.clickable {
-          val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://vovota.bi/about"))
+          val intent = Intent(Intent.ACTION_VIEW, "https://vovota.bi/about".toUri())
           context.startActivity(intent)
         }
       )
@@ -306,15 +291,7 @@ fun OrderTable(orders: List<Order>) {
 
   var selected by remember { mutableStateOf<String?>(null) }
 
-  val filteredOrders = remember(orders, selected) {
-    when (selected) {
-      "isPaid" -> orders.filter { it.isPayed }
-      "isNotPaid" -> orders.filter { !it.isPayed }
-      "isDelivered" -> orders.filter { it.isDelivered }
-      "isNotDelivered" -> orders.filter { !it.isDelivered }
-      else -> orders
-    }
-  }
+  val filteredOrders = remember(orders) { orders }
 
   Column {
     Spacer(modifier = Modifier.height(24.dp))
@@ -356,7 +333,7 @@ fun OrderTable(orders: List<Order>) {
           )
           Spacer(modifier = Modifier.height(4.dp))
           Text(
-            text = order.description,
+            text = order.date,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface
           )
@@ -366,14 +343,14 @@ fun OrderTable(orders: List<Order>) {
             modifier = Modifier.fillMaxWidth()
           ) {
             Text(
-              text = if (order.isDelivered) stringResource(R.string.pr_delivred) else stringResource(R.string.pr_delivred_not),
-              color = if (order.isDelivered) Color(0xFF4CAF50) else Color(0xFFF57C00),
+              text = if (true) stringResource(R.string.pr_delivred) else stringResource(R.string.pr_delivred_not),
+              color = if (true) Color(0xFF4CAF50) else Color(0xFFF57C00),
               fontWeight = FontWeight.SemiBold,
               fontSize = 12.sp
             )
             Text(
-              text = if (order.isPayed) stringResource(R.string.pr_paid) else stringResource(R.string.pr_no_paid),
-              color = if (order.isPayed) Color(0xFF4CAF50) else Color(0xFFD32F2F),
+              text = if (false) stringResource(R.string.pr_paid) else stringResource(R.string.pr_no_paid),
+              color = if (false) Color(0xFF4CAF50) else Color(0xFFD32F2F),
               fontWeight = FontWeight.SemiBold,
               fontSize = 12.sp
             )

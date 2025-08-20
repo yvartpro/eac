@@ -17,7 +17,7 @@ fun BottomBar(navController: NavController, cartItemCount: Int) {
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = navBackStackEntry?.destination?.route
 
-  val showBottomBar = bottomNavItems.any { it.route == currentRoute }
+  val showBottomBar = currentRoute != NavDestinations.AUTH
 
   fun navigateSingleTop(route: String) {
     navController.navigate(route) {

@@ -1,10 +1,12 @@
 package bi.vovota.eac.viewmodel
 
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import bi.vovota.eac.data.model.TokenManager
 import bi.vovota.eac.data.model.TokenResponse
+import bi.vovota.eac.data.model.UserRegister
 import bi.vovota.eac.data.repository.UserRepository
 import bi.vovota.eac.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -45,12 +47,13 @@ class AuthViewModel @Inject constructor(
   private val _loginSuccess = MutableStateFlow(false)
   val loginSuccess: StateFlow<Boolean> = _loginSuccess
 
-  fun register(fullName: String, phone: String, password: String) {
+  fun register(name: String, phone: String, types: String, password: String) {
     _loading.value = true
     _isError.value = false
     viewModelScope.launch {
       try {
-        val result = authRepository.registerUser(fullName, phone, password)
+        val result = authRepository.registerUser(UserRegister(name, phone, types, password))
+        Log.e("Register", result.toString())
         if (result) {
           _message.value = "Compte créé avec succès"
           _registerOk.value = true

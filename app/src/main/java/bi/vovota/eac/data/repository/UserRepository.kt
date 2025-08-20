@@ -32,62 +32,33 @@ class UserRepository @Inject constructor(
   TokenManager
 )
 {
-  var onLoginNeeded: (()-> Unit)? = null
-  suspend fun getProfile(): User {
-    val token = tokenManager.getAccessToken()
-    if (token == null) {
-      Log.e("UserRepo", "Missing token")
-      throw UnAuthorizedException("No access token found")
-    }
-    try {
-      val response = client.get("https://mib.vovota.bi/api/profile/"){
-          header(HttpHeaders.Authorization, "Bearer $token")
+  suspend fun getProfile(): User? {
+    val token = tokenManager.getAccessToken() ?: return null
+
+    return try {
+      val response = client.get("https://trade.vovota.bi/api/user/") {
+        header(HttpHeaders.Authorization, "Bearer $token")
       }
-      val responseText = response.bodyAsText()
-      println("User list: $responseText")
-      val users: List<UserRaw> = response.body()
-      val user = users.firstOrNull()?.toUser() ?: throw Exception("Empty user list from API: $responseText")
-      return  user
-    } catch (e: ClientRequestException) {
-      if (e.response.status == HttpStatusCode.Unauthorized) {
-        println("Access token expired. Trying refreshing...")
-        val refreshed = refreshToken()
-        if (refreshed) {
-          val newAccess = TokenManager.getAccessToken()
-          val retryResponse =  client.get("https://mib.vovota.bi/api/profile/"){
-            contentType(ContentType.Application.Json)
-            header(HttpHeaders.Authorization, "Bearer $newAccess")
-          }
-          return retryResponse.body()
-        } else {
-          throw UnAuthorizedException("Token refresh failed")
-        }
-      }else {
-        throw e
+      when (response.status) {
+        HttpStatusCode.OK -> response.body<User>()
+        HttpStatusCode.Unauthorized -> null
+        else -> throw Exception("Unexpected error: ${response.status}")
       }
+    }catch (e: Exception) {
+      null
     }
   }
-
-
 
   suspend fun editUser(update: UserUpdate, userId: Int): Boolean {
     val access = TokenManager.getAccessToken() ?: throw UnAuthorizedException("No access token")
     return try {
-      println("payload: $update")
-      val response = client.patch("https://mib.vovota.bi/api/profile/$userId/"){
+      val response = client.patch("https://trade.vovota.bi/api/user/$userId/"){
         header(HttpHeaders.Authorization, "Bearer $access")
         contentType(ContentType.Application.Json)
         setBody(update)
       }
-      if ( response.status == HttpStatusCode.OK || response.status == HttpStatusCode.Accepted) {
-        println("Update repo: ${response.status}")
-        true
-      }else{
-        println("Update repo: $response")
-        false
-      }
+      response.status == HttpStatusCode.OK || response.status == HttpStatusCode.Accepted
     } catch (e: ClientRequestException) {
-      println("Client error: ${e.response.status}")
       false
     } catch (e: Exception) {
       e.printStackTrace()
@@ -103,16 +74,14 @@ class UserRepository @Inject constructor(
       return false
     }
     return try {
-      val response = client.post("https://mib.vovota.bi/api/refresh/") {
+      val response = client.post("https://trade.vovota.bi/api/refresh/") {
         contentType(ContentType.Application.Json)
         setBody(mapOf("refresh" to refresh))
       }
       val tokenResponse = response.body<TokenResponse>()
-      println("Token refreshed: ${tokenResponse.access}")
       TokenManager.saveTokens(tokenResponse.access, tokenResponse.refresh)
       true
     } catch (e: Exception) {
-      println("Refresh failed: ${e.message}")
       TokenManager.clearTokens()
       false
     }

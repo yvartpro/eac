@@ -17,6 +17,7 @@ object NavDestinations {
   const val CATEGORY = "search/{category}"
   const val DETAILS = "details/{productId}"
   const val DASHBOARD = "dashboard"
+  const val EDITPROD = "edit_prod/{productId}"
 }
 
 data class BottomNavItem(
@@ -28,6 +29,12 @@ data class BottomNavItem(
 val bottomNavItems = listOf(
   BottomNavItem(R.string.b_home, R.drawable.home, NavDestinations.HOME),
   BottomNavItem(R.string.b_cart, R.drawable.shopping_cart, NavDestinations.CART),
-  BottomNavItem(R.string.dash, R.drawable.business, NavDestinations.DASHBOARD),
+  BottomNavItem(R.string.dash, R.drawable.home, NavDestinations.DASHBOARD),
+  BottomNavItem(R.string.b_profile, R.drawable.person, NavDestinations.PROFILE)
+)
+
+val userBottomNavItems = listOf(
+  BottomNavItem(R.string.b_home, R.drawable.home, NavDestinations.HOME),
+  BottomNavItem(R.string.b_cart, R.drawable.shopping_cart, NavDestinations.CART),
   BottomNavItem(R.string.b_profile, R.drawable.person, NavDestinations.PROFILE)
 )

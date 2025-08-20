@@ -1,5 +1,6 @@
 package bi.vovota.eac.data.repository
 
+import android.util.Log
 import bi.vovota.eac.data.model.Product
 import io.ktor.client.*
 import io.ktor.client.request.*
@@ -15,7 +16,7 @@ class ProductRepository @Inject constructor(
     return try {
       println("🔎 Calling Product API...")
       val response: HttpResponse = client.get("https://mib.vovota.bi/api/product/")
-      println("✅ Response: ${response.status}")
+      Log.e("Product repo:","✅ Response: ${response.status}")
       val rawJson = response.bodyAsText()
       println("📦 Body: $rawJson")
 

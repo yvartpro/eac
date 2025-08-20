@@ -1,8 +1,12 @@
 package bi.vovota.eac.ui.nav
 
+import android.util.Log
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -12,6 +16,7 @@ import bi.vovota.eac.ui.screen.AuthScreen
 import bi.vovota.eac.ui.screen.CartScreen
 import bi.vovota.eac.ui.screen.CompanyDetailsScreen
 import bi.vovota.eac.ui.screen.CompanyScreen
+import bi.vovota.eac.ui.screen.EditProduct
 import bi.vovota.eac.ui.screen.HomeScreen
 import bi.vovota.eac.ui.screen.MerchantDashboardBody
 import bi.vovota.eac.ui.screen.ProductDetailBody
@@ -37,7 +42,9 @@ fun AppNavGraph(
   companyViewModel: CompanyViewModel,
   orderViewModel: OrderViewModel
 ) {
+  val isLoggedIn by userViewModel.isLoggedIn.collectAsState()
   LaunchedEffect(Unit) {
+    userViewModel.loadUserProfile()
     productViewModel.loadProducts()
     cartViewModel.companies
     companyViewModel.loadCompanies()
@@ -48,7 +55,6 @@ fun AppNavGraph(
       HomeScreen(
         cartViewModel = cartViewModel,
         productViewModel = productViewModel,
-        //onNavigateToCart = { navController.navigate(NavDestinations.CART) },
         categoryViewModel = categoryViewModel,
         userViewModel = userViewModel,
         navController = navController
@@ -95,25 +101,59 @@ fun AppNavGraph(
       }
     }
     composable(NavDestinations.DASHBOARD) { backStackEntry->
-        MerchantDashboardBody(
+      val productId = backStackEntry.arguments?.getString("productId")?.toIntOrNull()
+      //val product = productViewModel.products.find { it.id == productId }
+      MerchantDashboardBody(
           products = productViewModel.products,
-          onEditProduct = { },
-          onOrderClick = { }
+          onEditProduct = { product->  navController.navigate("edit_prod/${product.id}") },
+          onOrderClick = { },
+          productViewModel = productViewModel,
+          userViewModel = userViewModel,
+          orderViewModel = orderViewModel
+
         )
     }
+    composable(NavDestinations.EDITPROD) {
+      navBackStackEntry ->
+      val productId = navBackStackEntry.arguments?.getString("productId")?.toIntOrNull()
+      val product = productViewModel.products.find { it.id == productId }
+      product?.let {
+        EditProduct(
+            product = product,
+            productViewModel,
+            onImageEditClick = {},
+            onFieldChange = { _, _ -> },
+            onRelatedProductEdit = {},
+        )
+      }
+    }
+
+    // ✅ Profile – require login
     composable(NavDestinations.PROFILE) {
-      ProfileScreen(
-        navController = navController,
-        userViewModel = userViewModel,
-        orderViewModel = orderViewModel
-      )
+      if (isLoggedIn == true) {
+        ProfileScreen(
+          navController = navController,
+          userViewModel = userViewModel,
+          orderViewModel = orderViewModel
+        )
+      } else {
+        // redirect to login
+        LaunchedEffect(Unit) {
+          navController.navigate(NavDestinations.AUTH) {
+            popUpTo(NavDestinations.PROFILE) { inclusive = true }
+          }
+        }
+      }
     }
     composable(NavDestinations.AUTH) {
       AuthScreen(
         modifier = Modifier,
         onBackClick = { navController.navigate(NavDestinations.HOME)},
         navController = navController,
-        userViewModel = userViewModel
+        onLoginSuccess = {
+          // after login, go back where user wanted
+          navController.popBackStack()
+        }
       )
     }
     composable(NavDestinations.SEARCH) {

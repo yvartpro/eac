@@ -1,5 +1,6 @@
 package bi.vovota.eac.viewmodel
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -12,6 +13,8 @@ import bi.vovota.eac.data.repository.UnAuthorizedException
 import bi.vovota.eac.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -32,8 +35,8 @@ class UserViewModel  @Inject constructor(private val userRepository: UserReposit
     isEditMode = !isEditMode
   }
 
-  private val _navigateToLogin = Channel<Unit>(Channel.CONFLATED)
-  val navigateToLogin = _navigateToLogin.receiveAsFlow()
+  private val _isLoggedIn = MutableStateFlow<Boolean?>(null)
+  val isLoggedIn = _isLoggedIn.asStateFlow()
 
   fun loadUserProfile() {
     viewModelScope.launch {
@@ -41,10 +44,11 @@ class UserViewModel  @Inject constructor(private val userRepository: UserReposit
       error = null
       try {
         user = userRepository.getProfile()
-        println("User is: $user")
+        _isLoggedIn.value = user != null
       }catch (e: UnAuthorizedException){
-        _navigateToLogin.trySend(Unit)
+        _isLoggedIn.value = false
       }catch (e: Exception) {
+        _isLoggedIn.value = false
         error = e.message
       }finally {
         isLoading = false
@@ -52,6 +56,10 @@ class UserViewModel  @Inject constructor(private val userRepository: UserReposit
     }
   }
 
+  fun logout( ){
+    _isLoggedIn.value = false
+    user = null
+  }
   fun clearUser() {
     user = null
   }

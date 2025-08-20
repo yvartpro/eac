@@ -55,13 +55,6 @@ fun HomeScreen(
         viewModel = categoryViewModel
       )
     }
-//    HomeSection(title = stringResource(R.string.latest)) {
-//      ProductImageRow(
-//        productViewModel = productViewModel,
-//        userViewModel = userViewModel,
-//        navController = navController
-//      )
-//    }
     HomeSection(title = stringResource(R.string.recommended)) {
       Recommended(
         productViewModel = productViewModel,

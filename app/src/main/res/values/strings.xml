@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">EAC</string>
+    <string name="app_name" translatable="false">East Africa Trade</string>
     <!-- home section-->
     <string name="category">Category</string>
     <string name="latest">Latest</string>
@@ -55,8 +55,8 @@
     <string name="f_addr">Address</string>
     <string name="f_enter_pwd">Enter your password</string>
     <!-- auth screen  -->
-    <string name="auth_login">Login</string>
-    <string name="auth_signin">Register</string>
+    <string name="auth_login">Sign In</string>
+    <string name="auth_signin">Create an account</string>
     <string name="auth_wait">Please wait...</string>
     <string name="auth_not_yet_user">Not yet registered ?</string>
     <string name="auth_create_one">Register now</string>

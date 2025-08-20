@@ -19,27 +19,12 @@ import javax.inject.Inject
 class OrderViewModel @Inject constructor(
   private val orderRepo: OrderRepository,
   private val userRepository: UserRepository
-
-): ViewModel() {
-
-  private val _result = MutableStateFlow("")
-  val result: StateFlow<String> = _result
+) : ViewModel() {
   var orders by mutableStateOf<List<Order>>(emptyList())
-    private set
-
-  var emptyMsg by mutableStateOf("")
     private set
 
   var isLoading by mutableStateOf(false)
     private set
-
-  fun placeOrder(customerId: Int, description: String) {
-    viewModelScope.launch {
-      val user = userRepository.getProfile()
-      val success = orderRepo.placeOrder(NewOrder(user.id, description))
-      _result.value = if (success) "Commande envoyée" else "Échec de la commande"
-    }
-  }
 
   fun loadOrders() {
     viewModelScope.launch {

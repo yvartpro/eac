@@ -35,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -47,11 +48,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -62,11 +65,15 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import bi.vovota.eac.R
+import bi.vovota.eac.data.model.UserRegister
 import bi.vovota.eac.ui.component.PhoneInputField
 import bi.vovota.eac.ui.component.ProfileTextField
+import bi.vovota.eac.ui.component.RadioButtons
 import bi.vovota.eac.ui.component.RadioCheckBox
+import bi.vovota.eac.ui.component.RadioSelect
 import bi.vovota.eac.ui.component.SmallText
 import bi.vovota.eac.ui.nav.NavDestinations
+import bi.vovota.eac.ui.theme.FontSizes
 import bi.vovota.eac.viewmodel.AuthViewModel
 import bi.vovota.eac.viewmodel.UserViewModel
 
@@ -78,11 +85,12 @@ modifier: Modifier = Modifier,
 onBackClick: () -> Unit,
 navController: NavController,
 viewModel: AuthViewModel = hiltViewModel(),
-userViewModel: UserViewModel
+onLoginSuccess: () -> Unit
 ) {
   var isLogin by rememberSaveable { mutableStateOf(true) }
   var fullName by rememberSaveable { mutableStateOf("") }
   var phone by rememberSaveable { mutableStateOf("") }
+  var types by rememberSaveable { mutableStateOf("BUYER") }
   var password by rememberSaveable { mutableStateOf("") }
   var passwordV by rememberSaveable { mutableStateOf("") }
   var passwordVisible by rememberSaveable { mutableStateOf(false) }
@@ -95,8 +103,7 @@ userViewModel: UserViewModel
 
   LaunchedEffect(loginSuccess) {
     if (loginSuccess) {
-      userViewModel.loadUserProfile()
-      navController.popBackStack()
+      onLoginSuccess()
     }
   }
 
@@ -108,7 +115,7 @@ userViewModel: UserViewModel
       .verticalScroll(rememberScrollState())
       .imePadding(),
     verticalArrangement = Arrangement.Top,
-    horizontalAlignment = Alignment.CenterHorizontally
+    horizontalAlignment = Alignment.Start
   ) {
     Column (
       modifier = Modifier
@@ -120,31 +127,53 @@ userViewModel: UserViewModel
           Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
         }
     }
-    Spacer(modifier = Modifier.height(48.dp))
-    Image(
-      painter = painterResource(id = R.drawable.logo),
-      contentDescription = stringResource(R.string.app_name),
-      modifier = Modifier.size(96.dp),
-      contentScale = ContentScale.Fit
-    )
-    Spacer(modifier = Modifier.height(16.dp))
-    Text(
-      text = if (isLogin) stringResource(R.string.auth_login) else stringResource(R.string.auth_signin),
-      style = TextStyle(
-        fontSize = 24.sp,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp),
+      horizontalAlignment = Alignment.Start,
+      verticalArrangement = Arrangement.Center
+    ) {
+      Row(){
+        Text(
+          text = if(isLogin) "Welcome to" else "Create your account",
+          fontWeight = FontWeight.Bold,
+          fontSize = FontSizes.title(),
+          color = MaterialTheme.colorScheme.primary
+        )
+        if( isLogin) {
+          Spacer(Modifier.width(4.dp))
+          Text(
+            text = stringResource(R.string.app_name).capitalize(),
+            fontWeight = FontWeight.Bold,
+            fontSize = FontSizes.title(),
+            color = MaterialTheme.colorScheme.primary
+          )
+        }
+      }
+      Spacer(Modifier.height(3.dp))
+      Text(
+        text = "Shop from anywhere. Grab EAC best products at hand",
+        fontSize = FontSizes.caption(),
+        fontWeight = FontWeight.Light,
+        color = Color.Gray
       )
-    )
+    }
     Spacer(modifier = Modifier.height(8.dp))
     Column(
       modifier = modifier
         .fillMaxWidth()
-        .padding(vertical = 16.dp, horizontal = 24.dp),
-      verticalArrangement = Arrangement.spacedBy(16.dp)
+        .padding(horizontal = 24.dp),
+      verticalArrangement = Arrangement.spacedBy(8.dp)
     ){
+      val userTypes = listOf("BUYER", "SELLER")
+
       if(!isLogin) {
-        RadioCheckBox()
+        RadioSelect(
+          options = userTypes,
+          selected = types,
+          onOptionSelected = { new -> types = new}
+        )
         ProfileTextField(
           value = fullName,
           onValueChange = { fullName = it },
@@ -155,11 +184,6 @@ userViewModel: UserViewModel
           isSensitive = false
         )
       }
-//      PhoneInputField(
-//        modifier = Modifier,
-//        onPhoneChanged = { phone = it},
-//        countries = countryList
-//        )
       CountryDropdownWithFlags(onPhoneNumberChanged = { phone = it })
       ProfileTextField(
         value = password,
@@ -207,10 +231,9 @@ userViewModel: UserViewModel
         if (isLogin) {
           viewModel.login(phone, password)
         } else {
-          Log.e("Register phone:", "${phone}${fullName}")
           viewModel.verifyPwd(password, passwordV)
           if (!viewModel.pwdUnmatch.value) {
-            viewModel.register(fullName, phone, password)
+            viewModel.register(fullName, phone, types, password)
             isLogin = viewModel.registerOk.value
             fullName = ""
           }
@@ -279,7 +302,6 @@ fun CountryDropdownWithFlags(
       if (isValid) {
         val fullNumber = "${selectedCountry.code}$phoneNumber"
         onPhoneNumberChanged("$fullNumber")
-        Log.d("Number valid", fullNumber)
       }
     },
     label = { Text("Phone number") },
@@ -306,13 +328,12 @@ fun CountryDropdownWithFlags(
         Spacer(modifier = Modifier.width(4.dp))
       }
     },
-    supportingText = {
-      if (!isValid) {
-        //Text("Format: ${selectedCountry.numberLength} numbers")
-      }
-    },
     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-    modifier = Modifier.fillMaxWidth()
+    modifier = Modifier.fillMaxWidth().padding(vertical = 0.dp),
+    colors = OutlinedTextFieldDefaults.colors(
+      focusedBorderColor = MaterialTheme.colorScheme.primary,
+      unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+    )
   )
 
   DropdownMenu(

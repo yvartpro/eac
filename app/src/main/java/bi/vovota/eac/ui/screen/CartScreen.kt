@@ -2,6 +2,8 @@ package bi.vovota.eac.ui.screen
 
 import android.annotation.SuppressLint
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -335,22 +338,131 @@ fun CheckoutSummarySection(
         )
       }
       Spacer(modifier = Modifier.height(12.dp))
-      Button(
-        onClick = onCheckoutClick,
-        enabled = !isLoading,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp)
+      var payMethod by remember { mutableStateOf("")}
+      PaymentOptions(
+          onPaymentSelected = { method, _ -> payMethod = method }
+      )
+//      Button(
+//        onClick = onCheckoutClick,
+//        enabled = !isLoading,
+//        modifier = Modifier.fillMaxWidth(),
+//        shape = RoundedCornerShape(12.dp)
+//      ) {
+//        if (isLoading) {
+//          CircularProgressIndicator(
+//            color = MaterialTheme.colorScheme.onPrimary,
+//            modifier = Modifier.size(18.dp),
+//            strokeWidth = 2.dp
+//          )
+//        } else {
+//          Text(stringResource(R.string.ca_place_command))
+//        }
+//      }
+    }
+  }
+}
+
+@Composable
+fun PaymentOptions(
+  paymentMethods: List<String> = listOf("Mobile Money", "Bank Transfer", "Cash on Delivery"),
+  onPaymentSelected: (String, String?) -> Unit
+) {
+  var selectedMethod by remember { mutableStateOf<String?>(null) }
+  var phoneNumber by remember { mutableStateOf("") }
+
+  Column(
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(16.dp),
+    verticalArrangement = Arrangement.spacedBy(16.dp)
+  ) {
+    Text(
+      text = "Choose Payment Method",
+      style = MaterialTheme.typography.titleMedium,
+      fontWeight = FontWeight.Bold
+    )
+
+    paymentMethods.forEach { method ->
+      val isSelected = method == selectedMethod
+
+      Card(
+
+        modifier = Modifier
+          .fillMaxWidth()
+          .clickable { selectedMethod = method }
+          .border(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray,
+            shape = RoundedCornerShape(12.dp)
+          ),
+        colors = CardDefaults.cardColors(
+          containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.White
+        )
       ) {
-        if (isLoading) {
-          CircularProgressIndicator(
-            color = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(18.dp),
-            strokeWidth = 2.dp
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          RadioButton(
+            selected = isSelected,
+            onClick = { selectedMethod = method }
           )
-        } else {
-          Text(stringResource(R.string.ca_place_command))
+          Spacer(modifier = Modifier.width(8.dp))
+          Text(method, style = MaterialTheme.typography.bodyLarge)
         }
       }
+    }
+
+    // If not CoD → phone number field
+    if (selectedMethod != null && selectedMethod != "Cash on Delivery") {
+      OutlinedTextField(
+        value = phoneNumber,
+        onValueChange = { phoneNumber = it },
+        label = { Text("Mobile Number") },
+        placeholder = { Text("e.g. +257 79 000 000") },
+        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
+        modifier = Modifier.fillMaxWidth()
+      )
+    }
+
+    // If CoD → nice confirmation card
+    if (selectedMethod == "Cash on Delivery") {
+      Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+          containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
+        ),
+        shape = RoundedCornerShape(12.dp)
+      ) {
+        Column(
+          modifier = Modifier.padding(16.dp),
+          verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          Text(
+            text = "Pay when you receive your order",
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.SemiBold
+          )
+          Text(
+            text = "Our delivery agent will collect the payment at your doorstep.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.Gray
+          )
+        }
+      }
+    }
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    Button(
+      onClick = { onPaymentSelected(selectedMethod ?: "", phoneNumber) },
+      modifier = Modifier.fillMaxWidth(),
+      enabled = selectedMethod != null &&
+              (selectedMethod == "Cash on Delivery" || phoneNumber.isNotBlank())
+    ) {
+      Text("Confirm Payment")
     }
   }
 }
